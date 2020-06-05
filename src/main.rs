@@ -141,7 +141,7 @@ fn expand_u32_blocks(blocks: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
                 ^ block_after_expand[idx - 8]
                 ^ block_after_expand[idx - 14]
                 ^ block_after_expand[idx - 16];
-            block_after_expand.push(circle_left_shift(letter, 1));
+            block_after_expand.push(circular_left_shift(letter, 1));
         }
         blocks_after_expand.push(block_after_expand);
     }
@@ -163,38 +163,38 @@ fn transform_block(block: Vec<u32>, state: (u32, u32, u32, u32, u32)) -> (u32, u
     let (mut s1, mut s2, mut s3, mut s4, mut s5) = state.clone();
 
     for i in 0..20 as usize {
-        let temp = circle_left_shift(s1, 5) + ((s2 & s3) | ((!s2) & s4)) + s5 + block[i] + K.0;
+        let temp = circular_left_shift(s1, 5) + ((s2 & s3) | ((!s2) & s4)) + s5 + block[i] + K.0;
         s5 = s4;
         s4 = s3;
-        s3 = circle_left_shift(s2, 30);
+        s3 = circular_left_shift(s2, 30);
         s2 = s1;
         s1 = temp;
     }
 
     for i in 20..40 as usize {
-        let temp = circle_left_shift(s1, 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.1;
+        let temp = circular_left_shift(s1, 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.1;
         s5 = s4;
         s4 = s3;
-        s3 = circle_left_shift(s2, 30);
+        s3 = circular_left_shift(s2, 30);
         s2 = s1;
         s1 = temp;
     }
 
     for i in 40..60 as usize {
         let temp =
-            circle_left_shift(s1, 5) + ((s2 & s3) | (s2 & s4) | (s3 & s4)) + s5 + block[i] + K.2;
+            circular_left_shift(s1, 5) + ((s2 & s3) | (s2 & s4) | (s3 & s4)) + s5 + block[i] + K.2;
         s5 = s4;
         s4 = s3;
-        s3 = circle_left_shift(s2, 30);
+        s3 = circular_left_shift(s2, 30);
         s2 = s1;
         s1 = temp;
     }
 
     for i in 60..80 as usize {
-        let temp = circle_left_shift(s1, 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.3;
+        let temp = circular_left_shift(s1, 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.3;
         s5 = s4;
         s4 = s3;
-        s3 = circle_left_shift(s2, 30);
+        s3 = circular_left_shift(s2, 30);
         s2 = s1;
         s1 = temp;
     }
@@ -215,15 +215,15 @@ fn add_state(
     )
 }
 
-fn circle_left_shift(input: u32, n: u32) -> u32 {
+fn circular_left_shift(input: u32, n: u32) -> u32 {
     (input << n) | (input >> (32 - n))
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn circle_left_shift_test() {
-        assert_eq!(super::circle_left_shift(0x67452301, 5), 0xE8A4602C);
+    fn circular_left_shift_test() {
+        assert_eq!(super::circular_left_shift(0x67452301, 5), 0xE8A4602C);
     }
 
     #[test]
