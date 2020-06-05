@@ -134,7 +134,7 @@ Kt = 0xCA62C1D6 (60 <= t <= 79)
 
 the result `State` of step 80 is the result `State` of this transform.
 
-#### 3.2.2 Transform `State` between `Blocks`
+#### 3.2.3 Transform `State` between `Blocks`
 
 Apply the Initial `State` mention before as the `initial_state` of the first transform of the first `Block`. Add the `initial_state` and the result `State` as the `initial_state` of the next transform of the next `Block`.
 
