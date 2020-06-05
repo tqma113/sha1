@@ -1,5 +1,5 @@
 fn main() {
-    let input = String::from("blob 16\0what is up, doc?");
+    let input = String::from("111");
     let result = sha1(&input);
     match result {
         Ok(hash) => {
@@ -25,6 +25,8 @@ fn main() {
 static BYTE_LENGTH_OF_PEER_BLOCK: usize = 64;
 static BYTE_LENGTH_OF_LATEST_BLOCK: usize = 56;
 
+static STATE: (u32, u32, u32, u32, u32) =
+    (0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0);
 static K: (u32, u32, u32, u32) = (0x5A827999, 0x6ED9EBA1, 0x8F1BBCDC, 0xCA62C1D6);
 
 fn sha1(input: &String) -> Result<String, String> {
@@ -33,8 +35,29 @@ fn sha1(input: &String) -> Result<String, String> {
         Err("The length of input is more than 1<<64!".to_string())
     } else {
         let u8_blocks = format_bytes_to_u8_blocks(bytes);
+        println!("u8_blocks: ");
+        for u8_block in u8_blocks.clone() {
+            for byte in u8_block {
+                print!("{}, ", byte);
+            }
+            println!();
+        }
         let u32_blocks = u8_blocks_to_u32_blocks(u8_blocks.clone());
+        println!("u8_blocks: ");
+        for u32_block in u32_blocks.clone() {
+            for byte in u32_block {
+                print!("{}, ", byte);
+            }
+            println!();
+        }
         let blocks_after_expand = expand_u32_blocks(u32_blocks.clone());
+        println!("blocks_after_expand: ");
+        for block in blocks_after_expand.clone() {
+            for byte in block {
+                print!("{}, ", byte);
+            }
+            println!();
+        }
         let state = transform_blocks(blocks_after_expand);
         let hash = format!(
             "{:X}{:X}{:X}{:X}{:X}",
@@ -81,9 +104,10 @@ fn format_bytes_to_u8_blocks(bytes: &[u8]) -> Vec<Vec<u8>> {
         }
         // 长度部分
         let mark: usize = (2 << 8) - 1;
+        let bit_length = bytes_length * 8;
         for bit in (0..64).step_by(8) {
             let right_bit = BYTE_LENGTH_OF_PEER_BLOCK - bit - 8;
-            let cur_u8 = (bytes_length >> right_bit) & mark;
+            let cur_u8 = (bit_length >> right_bit) & mark;
             latest_block.push(cur_u8 as u8);
         }
         blocks.push(latest_block);
@@ -95,9 +119,10 @@ fn format_bytes_to_u8_blocks(bytes: &[u8]) -> Vec<Vec<u8>> {
         }
         // 长度部分
         let mark: usize = (2 << 8) - 1;
+        let bit_length = bytes_length * 8;
         for bit in (0..64).step_by(8) {
             let right_bit = BYTE_LENGTH_OF_PEER_BLOCK - bit - 8;
-            let cur_u8 = (bytes_length >> right_bit) & mark;
+            let cur_u8 = (bit_length >> right_bit) & mark;
             next_block.push(cur_u8 as u8);
         }
         blocks.push(next_block);
@@ -153,7 +178,7 @@ fn expand_u32_blocks(blocks: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
 }
 
 fn transform_blocks(blocks: Vec<Vec<u32>>) -> (u32, u32, u32, u32, u32) {
-    let mut state = (0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0);
+    let mut state = STATE;
     for block in blocks {
         state = add_state(state, transform_block(block, state));
     }
