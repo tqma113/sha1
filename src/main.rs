@@ -35,29 +35,8 @@ fn sha1(input: &String) -> Result<String, String> {
         Err("The length of input is more than 1<<64!".to_string())
     } else {
         let u8_blocks = format_bytes_to_u8_blocks(bytes);
-        println!("u8_blocks: ");
-        for u8_block in u8_blocks.clone() {
-            for byte in u8_block {
-                print!("{}, ", byte);
-            }
-            println!();
-        }
         let u32_blocks = u8_blocks_to_u32_blocks(u8_blocks.clone());
-        println!("u8_blocks: ");
-        for u32_block in u32_blocks.clone() {
-            for byte in u32_block {
-                print!("{}, ", byte);
-            }
-            println!();
-        }
         let blocks_after_expand = expand_u32_blocks(u32_blocks.clone());
-        println!("blocks_after_expand: ");
-        for block in blocks_after_expand.clone() {
-            for byte in block {
-                print!("{:#b}, ", byte);
-            }
-            println!();
-        }
         let state = transform_blocks(blocks_after_expand);
         let hash = format!(
             "{:X}{:X}{:X}{:X}{:X}",
@@ -158,7 +137,10 @@ fn expand_u32_blocks(blocks: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
         }
 
         for idx in 16..80 as usize {
-            let letter = block_after_expand[idx - 3] ^ block_after_expand[idx - 8] ^ block_after_expand[idx - 14] ^block_after_expand[idx - 16];
+            let letter = block_after_expand[idx - 3]
+                ^ block_after_expand[idx - 8]
+                ^ block_after_expand[idx - 14]
+                ^ block_after_expand[idx - 16];
             block_after_expand.push(circle_left_shift(letter, 1));
         }
         blocks_after_expand.push(block_after_expand);
@@ -168,52 +150,53 @@ fn expand_u32_blocks(blocks: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
 }
 
 fn transform_blocks(blocks: Vec<Vec<u32>>) -> (u32, u32, u32, u32, u32) {
-    let mut state = STATE;
+    let mut state = STATE.clone();
     for block in blocks {
-        state = add_state(state, transform_block(block, state));
-        println!("state: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", state.0, state.1, state.2, state.3, state.4)
+        let result = transform_block(block, state.clone());
+        state = add_state(state, result);
     }
 
     state
 }
 
 fn transform_block(block: Vec<u32>, state: (u32, u32, u32, u32, u32)) -> (u32, u32, u32, u32, u32) {
-    let (mut s1, mut s2, mut s3, mut s4, mut s5) = state;
+    let (mut s1, mut s2, mut s3, mut s4, mut s5) = state.clone();
 
     for i in 0..20 as usize {
-        s1 = circle_left_shift(s1, 5) + ((s2 & s3) | ((!s2) & s4)) + s5 + block[i] + K.0;
+        let temp = circle_left_shift(s1, 5) + ((s2 & s3) | ((!s2) & s4)) + s5 + block[i] + K.0;
         s5 = s4;
         s4 = s3;
         s3 = circle_left_shift(s2, 30);
         s2 = s1;
-        println!("s: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", s1, s2, s3, s4, s5);
+        s1 = temp;
     }
 
     for i in 20..40 as usize {
-        s1 = circle_left_shift(s1, 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.1;
+        let temp = circle_left_shift(s1, 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.1;
         s5 = s4;
         s4 = s3;
         s3 = circle_left_shift(s2, 30);
         s2 = s1;
-        println!("s: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", s1, s2, s3, s4, s5);
+        s1 = temp;
     }
 
     for i in 40..60 as usize {
-        s1 = circle_left_shift(s1, 5) + ((s2 & s3) | (s2 & s4) | (s3 & s4)) + s5 + block[i] + K.2;
+        let temp =
+            circle_left_shift(s1, 5) + ((s2 & s3) | (s2 & s4) | (s3 & s4)) + s5 + block[i] + K.2;
         s5 = s4;
         s4 = s3;
         s3 = circle_left_shift(s2, 30);
         s2 = s1;
-        println!("s: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", s1, s2, s3, s4, s5);
+        s1 = temp;
     }
 
     for i in 60..80 as usize {
-        s1 = circle_left_shift(s1, 5)+ (s2 ^ s3 ^ s4) + s5 + block[i] + K.3;
+        let temp = circle_left_shift(s1, 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.3;
         s5 = s4;
         s4 = s3;
         s3 = circle_left_shift(s2, 30);
         s2 = s1;
-        println!("s: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", s1, s2, s3, s4, s5);
+        s1 = temp;
     }
 
     (s1, s2, s3, s4, s5)
@@ -234,4 +217,55 @@ fn add_state(
 
 fn circle_left_shift(input: u32, n: u32) -> u32 {
     (input << n) | (input >> (32 - n))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn circle_left_shift_test() {
+        assert_eq!(super::circle_left_shift(0x67452301, 5), 0xE8A4602C);
+    }
+
+    #[test]
+    fn add_state_test() {
+        assert_eq!(
+            super::add_state((1, 2, 3, 4, 5), (1, 2, 3, 4, 5)),
+            (2, 4, 6, 8, 10)
+        )
+    }
+
+    #[test]
+    fn transform_block_test() {
+        let block = vec![
+            825307520, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 1650615040, 0, 48, 3301230080,
+            0, 96, 2307492865, 48, 3301230272, 320018435, 0, 384, 640036870, 240, 3621248259,
+            1280073820, 1296910849, 1536, 2560147672, 320019395, 1600091151, 825327857, 320018435,
+            6336, 1903171681, 3840, 2105397309, 3301311908, 1566387221, 24768, 2594116938,
+            572695826, 1229710577, 320343827, 825328625, 1600058575, 68328980, 62976, 1329972175,
+            1281382796, 2324542810, 825724145, 3135392938, 573196770, 3855505269, 830537457,
+            2104948525, 824789489, 2263767383, 983040, 2110796157, 4147389685, 1563170141, 6340608,
+            2668972698, 581243810, 1841480015, 403644179, 11694592, 314090835, 3140965421,
+            16124416, 3966403430, 1365777661,
+        ];
+        let initial_state = (0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0);
+        let state = super::add_state(super::transform_block(block, initial_state), initial_state);
+        assert_eq!(
+            state,
+            (0x6216F8A7, 0x5FD5BB3D, 0x5F22B6F9, 0x958CDEDE, 0x3FC086C2)
+        )
+    }
+
+    #[test]
+    fn sha1_test() {
+        let input = String::from("111");
+        let result = super::sha1(&input);
+        match result {
+            Ok(hash) => {
+                assert_eq!(hash, "6216F8A75FD5BB3D5F22B6F9958CDEDE3FC086C2");
+            }
+            Err(e) => {
+                panic!(e);
+            }
+        }
+    }
 }
