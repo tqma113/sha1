@@ -54,7 +54,7 @@ fn sha1(input: &String) -> Result<String, String> {
         println!("blocks_after_expand: ");
         for block in blocks_after_expand.clone() {
             for byte in block {
-                print!("{}, ", byte);
+                print!("{:#b}, ", byte);
             }
             println!();
         }
@@ -158,18 +158,8 @@ fn expand_u32_blocks(blocks: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
         }
 
         for idx in 16..80 as usize {
-            block_after_expand.push(
-                u32::wrapping_add(
-                    block_after_expand[idx - 3],
-                    u32::wrapping_add(
-                        block_after_expand[idx - 8],
-                        u32::wrapping_add(
-                            block_after_expand[idx - 14],
-                            block_after_expand[idx - 16],
-                        ),
-                    ),
-                ) << 1,
-            );
+            let letter = block_after_expand[idx - 3] ^ block_after_expand[idx - 8] ^ block_after_expand[idx - 14] ^block_after_expand[idx - 16];
+            block_after_expand.push(circle_left_shift(letter, 1));
         }
         blocks_after_expand.push(block_after_expand);
     }
@@ -181,6 +171,7 @@ fn transform_blocks(blocks: Vec<Vec<u32>>) -> (u32, u32, u32, u32, u32) {
     let mut state = STATE;
     for block in blocks {
         state = add_state(state, transform_block(block, state));
+        println!("state: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", state.0, state.1, state.2, state.3, state.4)
     }
 
     state
@@ -190,35 +181,39 @@ fn transform_block(block: Vec<u32>, state: (u32, u32, u32, u32, u32)) -> (u32, u
     let (mut s1, mut s2, mut s3, mut s4, mut s5) = state;
 
     for i in 0..20 as usize {
-        s1 = (u32::from(s1) << 5) + ((s2 & s3) | ((!s2) & s4)) + s5 + block[i] + K.0;
+        s1 = circle_left_shift(s1, 5) + ((s2 & s3) | ((!s2) & s4)) + s5 + block[i] + K.0;
         s5 = s4;
         s4 = s3;
-        s3 = u32::from(s2) << 30;
+        s3 = circle_left_shift(s2, 30);
         s2 = s1;
+        println!("s: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", s1, s2, s3, s4, s5);
     }
 
     for i in 20..40 as usize {
-        s1 = (u32::from(s1) << 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.1;
+        s1 = circle_left_shift(s1, 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.1;
         s5 = s4;
         s4 = s3;
-        s3 = u32::from(s2) << 30;
+        s3 = circle_left_shift(s2, 30);
         s2 = s1;
+        println!("s: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", s1, s2, s3, s4, s5);
     }
 
     for i in 40..60 as usize {
-        s1 = (u32::from(s1) << 5) + ((s2 & s3) | (s2 & s4) | (s3 & s4)) + s5 + block[i] + K.2;
+        s1 = circle_left_shift(s1, 5) + ((s2 & s3) | (s2 & s4) | (s3 & s4)) + s5 + block[i] + K.2;
         s5 = s4;
         s4 = s3;
-        s3 = u32::from(s2) << 30;
+        s3 = circle_left_shift(s2, 30);
         s2 = s1;
+        println!("s: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", s1, s2, s3, s4, s5);
     }
 
     for i in 60..80 as usize {
-        s1 = (u32::from(s1) << 5) + (s2 ^ s3 ^ s4) + s5 + block[i] + K.3;
+        s1 = circle_left_shift(s1, 5)+ (s2 ^ s3 ^ s4) + s5 + block[i] + K.3;
         s5 = s4;
         s4 = s3;
-        s3 = u32::from(s2) << 30;
+        s3 = circle_left_shift(s2, 30);
         s2 = s1;
+        println!("s: {:#b}, {:#b}, {:#b}, {:#b}, {:#b}", s1, s2, s3, s4, s5);
     }
 
     (s1, s2, s3, s4, s5)
@@ -235,4 +230,8 @@ fn add_state(
         u32::wrapping_add(a.3, b.3),
         u32::wrapping_add(a.4, b.4),
     )
+}
+
+fn circle_left_shift(input: u32, n: u32) -> u32 {
+    (input << n) | (input >> (32 - n))
 }
