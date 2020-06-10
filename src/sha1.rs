@@ -21,8 +21,8 @@ pub fn sha1(bytes: &[u8]) -> Result<String, String> {
         Err("The length of input is more than 1<<64!".to_string())
     } else {
         let u8_blocks = format_bytes_to_u8_blocks(bytes);
-        let u32_blocks = u8_blocks_to_u32_blocks(u8_blocks.clone());
-        let blocks_after_expand = expand_u32_blocks(u32_blocks.clone());
+        let u32_blocks = u8_blocks_to_u32_blocks(u8_blocks);
+        let blocks_after_expand = expand_u32_blocks(u32_blocks);
         let state = transform_blocks(blocks_after_expand);
         let hash = format!(
             "{:X}{:X}{:X}{:X}{:X}",
@@ -116,7 +116,7 @@ fn u8_blocks_to_u32_blocks(u8_blocks: Vec<Vec<u8>>) -> Vec<Vec<u32>> {
 
 fn expand_u32_blocks(blocks: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     let mut blocks_after_expand: Vec<Vec<u32>> = Vec::new();
-    for block in blocks.clone() {
+    for block in blocks {
         let mut block_after_expand: Vec<u32> = Vec::new();
         for i in 0..16 as usize {
             block_after_expand.push(block[i]);
@@ -138,7 +138,7 @@ fn expand_u32_blocks(blocks: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
 fn transform_blocks(blocks: Vec<Vec<u32>>) -> (u32, u32, u32, u32, u32) {
     let mut state = STATE.clone();
     for block in blocks {
-        let result = transform_block(block, state.clone());
+        let result = transform_block(block, state);
         state = add_state(state, result);
     }
 
@@ -146,7 +146,7 @@ fn transform_blocks(blocks: Vec<Vec<u32>>) -> (u32, u32, u32, u32, u32) {
 }
 
 fn transform_block(block: Vec<u32>, state: (u32, u32, u32, u32, u32)) -> (u32, u32, u32, u32, u32) {
-    let (mut s1, mut s2, mut s3, mut s4, mut s5) = state.clone();
+    let (mut s1, mut s2, mut s3, mut s4, mut s5) = state;
 
     for i in 0..20 as usize {
         let temp = circular_left_shift(s1, 5) + ((s2 & s3) | ((!s2) & s4)) + s5 + block[i] + K.0;
