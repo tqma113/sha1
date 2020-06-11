@@ -16,7 +16,8 @@ static STATE: (u32, u32, u32, u32, u32) =
     (0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0);
 static K: (u32, u32, u32, u32) = (0x5A827999, 0x6ED9EBA1, 0x8F1BBCDC, 0xCA62C1D6);
 
-pub fn sha1(bytes: &[u8]) -> Result<String, String> {
+pub fn sha1(input: &String) -> Result<String, String> {
+    let bytes = input.as_bytes();
     if (bytes.len() * 8) as u64 > 1 << 64 - 1 {
         Err("The length of input is more than 1<<64!".to_string())
     } else {
